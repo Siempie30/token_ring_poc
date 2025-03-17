@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	commonFile  = "common.txt"
+	commonFile  = "../common.txt"
 	portFile    = "ring_ports.txt"
 	receivedAck = false
 )
@@ -95,6 +95,34 @@ func writeToFile() {
 	time.Sleep(2 * time.Second)
 }
 
+func postToken(port int) {
+	url := fmt.Sprintf("http://localhost:%d/token", port)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer([]byte("token")))
+	if err != nil {
+		fmt.Println("Error creating token request:", err)
+		return
+	}
+	fmt.Println("Posting token to", port)
+	req.Header.Set("From-Port", os.Getenv("PORT"))
+	receivedAck = false
+	_, err = http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("Error sending token to", port, ":", err)
+	}
+
+	// Wait for acknowledgement for five seconds
+	for start := time.Now(); time.Since(start) < 5*time.Second; {
+		if receivedAck == true {
+			// Next node confirmed having received the token
+			return
+		}
+	}
+	// Acknowledgement not received, so assume next node is down. Remove the failing port and attempt the first next port
+	nextPort, _ := getNextPort(port)
+	sendPortRemoval(port)
+	postToken(nextPort)
+}
+
 func handleToken(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -148,32 +176,44 @@ func handleAcknowledgement(w http.ResponseWriter, r *http.Request) {
 	receivedAck = true
 }
 
-func postToken(port int) {
-	url := fmt.Sprintf("http://localhost:%d/token", port)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer([]byte("token")))
+func sendPortRemoval(port int) error {
+	data, err := ioutil.ReadFile(portFile)
 	if err != nil {
-		fmt.Println("Error creating token request:", err)
-		return
+		return err
 	}
-	fmt.Println("Posting token to", port)
-	req.Header.Set("From-Port", os.Getenv("PORT"))
-	receivedAck = false
-	_, err = http.DefaultClient.Do(req)
-	if err != nil {
-		fmt.Println("Error sending token to", port, ":", err)
-	}
-
-	// Wait for acknowledgement for five seconds
-	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		if receivedAck == true {
-			// Next node confirmed having received the token
-			return
+	ports := strings.Split(strings.TrimSpace(string(data)), "\n")
+	for _, p := range ports {
+		// Send message that port is removed
+		targetPort, _ := strconv.Atoi(p)
+		url := fmt.Sprintf("http://localhost:%d/removal", targetPort)
+		_, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte(strconv.Itoa(port))))
+		if err != nil {
+			return err
 		}
 	}
-	// Acknowledgement not received, so assume next node is down. Remove the failing port and attempt the first next port
-	nextPort, _ := getNextPort(port)
-	removePort(port)
-	postToken(nextPort)
+	return nil
+}
+
+func handlePortRemoval(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	removedPort, err := strconv.Atoi(strings.TrimSpace(string(body)))
+	if err != nil {
+		http.Error(w, "Invalid port format", http.StatusBadRequest)
+		return
+	}
+
+	removePort(removedPort)
 }
 
 func main() {
@@ -185,6 +225,7 @@ func main() {
 
 	http.HandleFunc("/token", handleToken)
 	http.HandleFunc("/ack", handleAcknowledgement)
+	http.HandleFunc("/removal", handlePortRemoval)
 	fmt.Println("Listening on port", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		fmt.Println("Server error:", err)
