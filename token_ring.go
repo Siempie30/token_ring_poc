@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io/ioutil"
@@ -32,22 +33,47 @@ func getNextPort(currentPort int) (int, error) {
 	return 0, fmt.Errorf("current port not found in ring")
 }
 
-func getPreviousPort(currentPort int) (int, error) {
-	data, err := ioutil.ReadFile(portFile)
+func removePort(port int) error {
+	tempFile := portFile + ".tmp"
+	inputFile, err := os.Open(portFile)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	ports := strings.Split(strings.TrimSpace(string(data)), "\n")
-	for i, p := range ports {
-		p = strings.TrimSpace(p)
-		if p == strconv.Itoa(currentPort) {
-			if i == 0 {
-				return strconv.Atoi(ports[len(ports)-1])
+	defer inputFile.Close()
+
+	outputFile, err := os.Create(tempFile)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+
+	scanner := bufio.NewScanner(inputFile)
+	writer := bufio.NewWriter(outputFile)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Copy the string into the temp file if it does not contain the port that should be removed
+		if !strings.Contains(line, strconv.Itoa(port)) {
+			_, err := writer.WriteString(line + "\n")
+			if err != nil {
+				return err
 			}
-			return strconv.Atoi(ports[i-1])
 		}
 	}
-	return 0, fmt.Errorf("current port not found in ring")
+
+	writer.Flush()
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	// Replace original file with temp file
+	if err := os.Rename(tempFile, portFile); err != nil {
+		return err
+	}
+
+	fmt.Println("Removed port", port)
+	return nil
 }
 
 func writeToFile() {
@@ -65,6 +91,7 @@ func writeToFile() {
 	}
 	fmt.Println("Writing to file")
 
+	// Simulate procesing time
 	time.Sleep(2 * time.Second)
 }
 
@@ -74,7 +101,7 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send ack to node that sent the token
+	// Send ack to token sender
 	previousPort := r.Header.Get("From-Port")
 	if previousPort != "" {
 		prevPort, err := strconv.Atoi(previousPort)
@@ -143,8 +170,9 @@ func postToken(port int) {
 			return
 		}
 	}
-	// Acknowledgement not received, so assume next node is down. Attempt the first next port
+	// Acknowledgement not received, so assume next node is down. Remove the failing port and attempt the first next port
 	nextPort, _ := getNextPort(port)
+	removePort(port)
 	postToken(nextPort)
 }
 
