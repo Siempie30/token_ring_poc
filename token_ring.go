@@ -8,14 +8,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 var (
-	commonFile = "common.txt"
-	portFile   = "ring_ports.txt"
-	mutex      sync.Mutex
+	commonFile  = "common.txt"
+	portFile    = "ring_ports.txt"
+	receivedAck = false
 )
 
 func getNextPort(currentPort int) (int, error) {
@@ -52,9 +51,6 @@ func getPreviousPort(currentPort int) (int, error) {
 }
 
 func writeToFile() {
-	mutex.Lock()
-	defer mutex.Unlock()
-
 	f, err := os.OpenFile(commonFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println("Error opening file:", err)
@@ -83,9 +79,11 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 	if previousPort != "" {
 		prevPort, err := strconv.Atoi(previousPort)
 		if err == nil {
+			fmt.Println("Received token from", prevPort)
 			sendAcknowledgement(prevPort)
 		}
 	}
+
 	// Access the shared resource, now that we have the token
 	writeToFile()
 
@@ -120,6 +118,7 @@ func handleAcknowledgement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println("Acknowledgement received")
+	receivedAck = true
 }
 
 func postToken(port int) {
@@ -129,12 +128,24 @@ func postToken(port int) {
 		fmt.Println("Error creating token request:", err)
 		return
 	}
+	fmt.Println("Posting token to", port)
 	req.Header.Set("From-Port", os.Getenv("PORT"))
+	receivedAck = false
 	_, err = http.DefaultClient.Do(req)
 	if err != nil {
 		fmt.Println("Error sending token to", port, ":", err)
 	}
-	fmt.Println("Posted token to", port)
+
+	// Wait for acknowledgement for five seconds
+	for start := time.Now(); time.Since(start) < 5*time.Second; {
+		if receivedAck == true {
+			// Next node confirmed having received the token
+			return
+		}
+	}
+	// Acknowledgement not received, so assume next node is down. Attempt the first next port
+	nextPort, _ := getNextPort(port)
+	postToken(nextPort)
 }
 
 func main() {
