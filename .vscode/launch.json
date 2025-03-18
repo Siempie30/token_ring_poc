@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "type": "go",
+            "request": "launch",
+            "name": "Launch Token Ring Node",
+            "program": "${workspaceFolder}/token_ring.go",
+            "cwd": "${workspaceFolder}/${input:port}",
+            "env": {
+                "PORT": "${input:port}"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "type": "promptString",
+            "id": "port",
+            "description": "Enter the port number for this node (e.g., 5000, 5001, 5002)"
+        }
+    ]
+}
