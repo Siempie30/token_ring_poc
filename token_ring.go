@@ -177,17 +177,31 @@ func handleAcknowledgement(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendPortRemoval(port int) error {
-	data, err := ioutil.ReadFile(portFile)
+	file, err := os.Open(portFile)
 	if err != nil {
 		return err
 	}
-	ports := strings.Split(strings.TrimSpace(string(data)), "\n")
-	for _, p := range ports {
-		// Send message that port is removed
-		targetPort, _ := strconv.Atoi(p)
+	defer file.Close()
+
+	// Copy lines into buffer first
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	for _, line := range lines {
+		fmt.Println("Sending port removal request to", line)
+
+		targetPort, _ := strconv.Atoi(line)
 		url := fmt.Sprintf("http://localhost:%d/removal", targetPort)
+		if targetPort == port { // Skip the port that is to be removed
+			continue
+		}
+		// Send message that port is to be removed
 		_, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte(strconv.Itoa(port))))
 		if err != nil {
+			fmt.Println("Error sending port removal request to", targetPort, ":", err)
 			return err
 		}
 	}
