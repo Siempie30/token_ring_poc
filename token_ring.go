@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -19,13 +19,23 @@ var (
 )
 
 func getNextPort(currentPort int) (int, error) {
-	data, err := ioutil.ReadFile(portFile)
+	file, err := os.Open(portFile)
 	if err != nil {
 		return 0, err
 	}
-	ports := strings.Split(strings.TrimSpace(string(data)), "\n")
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var ports []string
+	for scanner.Scan() {
+		ports = append(ports, strings.TrimSpace(scanner.Text()))
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
 	for i, p := range ports {
-		p = strings.TrimSpace(p)
 		if p == strconv.Itoa(currentPort) {
 			return strconv.Atoi(ports[(i+1)%len(ports)])
 		}
@@ -214,7 +224,7 @@ func handlePortRemoval(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
 		return
