@@ -10,6 +10,8 @@ services:
       - "5000:5000"
     networks:
       - mynetwork
+    volumes:
+      - ./output:/app/output
 
   app-5001:
     build: .
@@ -20,6 +22,8 @@ services:
       - "5001:5001"
     networks:
       - mynetwork
+    volumes:
+      - ./output:/app/output
 
   app-5002:
     build: .
@@ -30,6 +34,8 @@ services:
       - "5002:5002"
     networks:
       - mynetwork
+    volumes:
+      - ./output:/app/output
 
 networks:
   mynetwork:

@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	commonFile = "../common.txt"
+	commonFile = "output/common.txt"
 )
 
 func writeToFile() {
