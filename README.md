@@ -12,7 +12,10 @@ This project is an implementation of the **Token Ring Algorithm** in Golang, to 
 
 ## Usage
 ### Setup
-1. Run the `resetNodes.sh` script. This prepares the three directories in which the nodes can be run, and the required `ring_ports.txt` files which contain the list of ports on which nodes are running.
+1. From the repository root, run the reset nodes script. This prepares the three directories in which the nodes can be run, and the required `ring_ports.txt` files which contain the list of ports on which nodes are running.
+   ```
+   ./reset_nodes.sh
+   ```
 
 ### Running the nodes
 **Do the first two steps for each node!**
