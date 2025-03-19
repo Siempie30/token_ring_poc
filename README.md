@@ -6,6 +6,7 @@ This project is an implementation of the **Token Ring Algorithm** in Golang, to 
 ## Features
 - Implements a token-passing mechanism access to a common resource (`common.txt`).
 - Uses HTTP for inter-node communication.
+- Nodes can be appended to the ring while the other nodes are already active.
 - Handles node failures by removing inactive nodes from the ring.
 - Implements an acknowledgment system to confirm token receipt. If no acknowledgement is given within a timer, the token is instead passed to the next node. This prevents a deadlock when a failing node is given the token.
 
