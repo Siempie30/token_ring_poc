@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  app-5000:
+    build: .
+    container_name: go_app_1
+    environment:
+      - PORT=5000
+    ports:
+      - "5000:5000"
+    networks:
+      - mynetwork
+
+  app-5001:
+    build: .
+    container_name: go_app_2
+    environment:
+      - PORT=5001
+    ports:
+      - "5001:5001"
+    networks:
+      - mynetwork
+
+  app-5002:
+    build: .
+    container_name: go_app_3
+    environment:
+      - PORT=5002
+    ports:
+      - "5002:5002"
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:

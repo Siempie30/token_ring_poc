@@ -11,24 +11,8 @@ This project is an implementation of the **Token Ring Algorithm** in Golang, to 
 - Implements an acknowledgment system to confirm token receipt. If no acknowledgement is given within a timer, the token is instead passed to the next node. This prevents a deadlock when a failing node is given the token.
 
 ## Usage
-### Setup
-1. From the repository root, run the reset nodes script. This prepares the three directories in which the nodes can be run, and the required `ring_ports.txt` files which contain the list of ports on which nodes are running.
-   ```
-   ./resetNodes.sh
-   ```
-
 ### Running the nodes
-**Do the first two steps for each node!**
-1. Go into the node running directory
+1. Start docker
    ```sh
-   cd <<nodeNumber>>
-   ```
-2. Start the program:
-   ```sh
-   PORT=${PWD##*/} go run ../src
-   ```
-   This sets the port to the name of the current directory
-3. Hand the token to the first node
-   ```sh
-   curl -X POST http://localhost:5000/token
+   docker-compose up --build
    ```

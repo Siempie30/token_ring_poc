@@ -1,3 +1,3 @@
 module token_ring_test
 
-go 1.24.1
+go 1.21.13

@@ -6,6 +6,10 @@ import (
 	"strconv"
 )
 
+var (
+	baseUrl = "http://app-"
+)
+
 func Init() error {
 	err := InitRing()
 	if err != nil {
