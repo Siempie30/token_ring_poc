@@ -21,7 +21,7 @@ This project is an implementation of the **Token Ring Algorithm** in Golang, to 
    ```
 2. Start the program:
    ```sh
-   PORT=${PWD##*/} go run ../token_ring.go
+   PORT=${PWD##*/} go run ../src
    ```
    This sets the port to the name of the current directory
 3. Hand the token to the first node
