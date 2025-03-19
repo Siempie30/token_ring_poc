@@ -6,12 +6,8 @@ import (
 	"time"
 )
 
-var (
-	commonFile = "../common.txt"
-)
-
-func writeToFile() {
-	f, err := os.OpenFile(commonFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func writeToFile(filename string) {
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return

@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	portFile = "ring_ports.txt"
-	port     = -1
+	portFileBase = "ring_ports.txt"
+	port         = -1
 )
 
 func InitRing() error {
@@ -31,7 +31,7 @@ func InitRing() error {
 	}
 
 	// Check if ring file exists
-	if _, err := os.Stat(portFile); os.IsNotExist(err) {
+	if _, err := os.Stat(portFileBase); os.IsNotExist(err) {
 		return fmt.Errorf("ring file does not exist")
 	}
 
@@ -53,7 +53,7 @@ func InitRing() error {
 }
 
 func isInRing(port int) bool {
-	file, err := os.Open(portFile)
+	file, err := os.Open(portFileBase)
 	if err != nil {
 		return false
 	}
@@ -70,7 +70,7 @@ func isInRing(port int) bool {
 }
 
 func getNextPort(currentPort int) (int, error) {
-	file, err := os.Open(portFile)
+	file, err := os.Open(portFileBase)
 	if err != nil {
 		return 0, err
 	}
@@ -96,7 +96,7 @@ func getNextPort(currentPort int) (int, error) {
 
 // Append a port to the ring file. Currently assumes that the ring file ends with a newline.
 func appendPort(port int) error {
-	file, err := os.OpenFile(portFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(portFileBase, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -112,8 +112,8 @@ func appendPort(port int) error {
 }
 
 func removePort(port int) error {
-	tempFile := portFile + ".tmp"
-	inputFile, err := os.Open(portFile)
+	tempFile := portFileBase + ".tmp"
+	inputFile, err := os.Open(portFileBase)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func removePort(port int) error {
 		return err
 	}
 
-	if err := os.Rename(tempFile, portFile); err != nil {
+	if err := os.Rename(tempFile, portFileBase); err != nil {
 		return err
 	}
 
@@ -152,8 +152,8 @@ func removePort(port int) error {
 	return nil
 }
 
-func sendPortRemoval(port int) error {
-	file, err := os.Open(portFile)
+func sendPortRemoval(repo string, port int) error {
+	file, err := os.Open(portFileBase)
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func handlePortRemoval(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendPortAddition(port int) error {
-	file, err := os.Open(portFile)
+	file, err := os.Open(portFileBase)
 	if err != nil {
 		return err
 	}

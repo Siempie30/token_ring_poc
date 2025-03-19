@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-func postToken(port int) {
+func postToken(repo string, port int) {
 	url := fmt.Sprintf("http://localhost:%d/token", port)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer([]byte("token")))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer([]byte(repo)))
 	if err != nil {
 		fmt.Println("Error creating token request:", err)
 		return
@@ -30,8 +30,8 @@ func postToken(port int) {
 		}
 	}
 	nextPort, _ := getNextPort(port)
-	sendPortRemoval(port)
-	postToken(nextPort)
+	sendPortRemoval(repo, port)
+	postToken(repo, nextPort)
 }
 
 func handleToken(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,21 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeToFile()
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+	reponame := buf.String()
+	if reponame == "" {
+		fmt.Println("Received empty token")
+		return
+	}
+
+	filename := "../" + reponame + ".txt"
+
+	writeToFile(filename)
 
 	currentPort, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
@@ -63,5 +77,5 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	postToken(nextPort)
+	postToken(reponame, nextPort)
 }
