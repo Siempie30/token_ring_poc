@@ -30,6 +30,17 @@ func InitRing() error {
 		return err
 	}
 
+	// Get repos from environment variable
+	repoList := os.Getenv("REPOS")
+	if repoList == "" {
+		fmt.Println("REPOS environment variable not set")
+		return fmt.Errorf("REPOS environment variable not set")
+	}
+	repos := strings.Split(repoList, ",")
+	for _, repo := range repos {
+		fmt.Println("Repo:", repo)
+	}
+
 	// Check if ring file exists
 	if _, err := os.Stat(portFileBase); os.IsNotExist(err) {
 		return fmt.Errorf("ring file does not exist")
