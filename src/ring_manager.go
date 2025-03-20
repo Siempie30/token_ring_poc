@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	portFileBase = "ring/ring_ports.txt"
+	portDir      = "ring"
+	portFileBase = "ring_ports.txt"
 	port         = -1
 )
 
@@ -41,30 +42,40 @@ func InitRing() error {
 		fmt.Println("Repo:", repo)
 	}
 
-	// Check if ring file exists
-	if _, err := os.Stat(portFileBase); os.IsNotExist(err) {
-		return fmt.Errorf("ring file does not exist")
+	// Check if ring file exists for each repo
+	for _, repo := range repos {
+		ringFile := getRingFile(repo)
+		if _, err := os.Stat(ringFile); os.IsNotExist(err) {
+			fmt.Println("Ring file does not exist for", repo)
+			return fmt.Errorf("ring file does not exist for %s", repo)
+		}
 	}
 
-	// Check if port is in ring
-	if !isInRing(port) {
-		// Send message to gateways in ring to append this gateway to the ring
-		err = sendPortAddition(port)
-		if err != nil {
-			fmt.Println("Error sending port addition request:", err)
-			return err
+	for _, repo := range repos {
+		// Check if port is in ring
+		if !isInRing(port, repo) {
+			// Send message to gateways in ring to append this gateway to the ring
+			err = sendPortAddition(port, repo)
+			if err != nil {
+				fmt.Println("Error sending port addition request:", err)
+				return err
+			}
+			// Append own port to ring
+			appendPort(port, repo)
+		} else {
+			// This gateway is already part of the ring, so simply start waiting for token
 		}
-		// Append own port to ring
-		appendPort(port)
-	} else {
-		// This gateway is already part of the ring, so simply start waiting for token
 	}
 
 	return nil
 }
 
-func isInRing(port int) bool {
-	file, err := os.Open(portFileBase)
+func getRingFile(repo string) string {
+	return fmt.Sprintf("%s/%s-%s", portDir, repo, portFileBase)
+}
+
+func isInRing(port int, repo string) bool {
+	file, err := os.Open(getRingFile(repo))
 	if err != nil {
 		return false
 	}
@@ -80,8 +91,8 @@ func isInRing(port int) bool {
 	return false
 }
 
-func getNextPort(currentPort int) (int, error) {
-	file, err := os.Open(portFileBase)
+func getNextPort(currentPort int, repo string) (int, error) {
+	file, err := os.Open(getRingFile(repo))
 	if err != nil {
 		return 0, err
 	}
@@ -106,8 +117,8 @@ func getNextPort(currentPort int) (int, error) {
 }
 
 // Append a port to the ring file. Currently assumes that the ring file ends with a newline.
-func appendPort(port int) error {
-	file, err := os.OpenFile(portFileBase, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func appendPort(port int, repo string) error {
+	file, err := os.OpenFile(getRingFile(repo), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -122,9 +133,9 @@ func appendPort(port int) error {
 	return nil
 }
 
-func removePort(port int) error {
-	tempFile := portFileBase + ".tmp"
-	inputFile, err := os.Open(portFileBase)
+func removePort(port int, repo string) error {
+	tempFile := getRingFile(repo) + ".tmp"
+	inputFile, err := os.Open(getRingFile(repo))
 	if err != nil {
 		return err
 	}
@@ -155,7 +166,7 @@ func removePort(port int) error {
 		return err
 	}
 
-	if err := os.Rename(tempFile, portFileBase); err != nil {
+	if err := os.Rename(tempFile, getRingFile(repo)); err != nil {
 		return err
 	}
 
@@ -164,7 +175,7 @@ func removePort(port int) error {
 }
 
 func sendPortRemoval(repo string, port int) error {
-	file, err := os.Open(portFileBase)
+	file, err := os.Open(getRingFile(repo))
 	if err != nil {
 		return err
 	}
@@ -181,13 +192,10 @@ func sendPortRemoval(repo string, port int) error {
 
 		targetPort, _ := strconv.Atoi(line)
 		url := fmt.Sprintf("%s%d:%d/removal", baseUrl, targetPort, targetPort)
-		if targetPort == port {
-			continue
-		}
-		_, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte(strconv.Itoa(port))))
+		payload := fmt.Sprintf("%d,%s", port, repo)
+		_, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte(payload)))
 		if err != nil {
 			fmt.Println("Error sending port removal request to", targetPort, ":", err)
-			return err
 		}
 	}
 	return nil
@@ -206,17 +214,29 @@ func handlePortRemoval(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	removedPort, err := strconv.Atoi(strings.TrimSpace(string(body)))
+	data := strings.SplitN(strings.TrimSpace(string(body)), ",", 2)
+	if len(data) != 2 {
+		http.Error(w, "Invalid payload format", http.StatusBadRequest)
+		return
+	}
+
+	removedPort, err := strconv.Atoi(data[0])
 	if err != nil {
 		http.Error(w, "Invalid port format", http.StatusBadRequest)
 		return
 	}
 
-	removePort(removedPort)
+	repo := data[1]
+
+	err = removePort(removedPort, repo)
+	if err != nil {
+		fmt.Println("Failed to remove port", removedPort, "from repo", repo, ":", err)
+		return
+	}
 }
 
-func sendPortAddition(port int) error {
-	file, err := os.Open(portFileBase)
+func sendPortAddition(port int, repo string) error {
+	file, err := os.Open(getRingFile(repo))
 	if err != nil {
 		return err
 	}
@@ -233,7 +253,8 @@ func sendPortAddition(port int) error {
 
 		targetPort, _ := strconv.Atoi(line)
 		url := fmt.Sprintf("%s%d:%d/addition", baseUrl, targetPort, targetPort)
-		_, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte(strconv.Itoa(port))))
+		payload := fmt.Sprintf("%d,%s", port, repo)
+		_, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte(payload)))
 		if err != nil {
 			fmt.Println("Error sending port addition request to", targetPort, ":", err)
 			return err
@@ -255,15 +276,23 @@ func handlePortAddition(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	addedPort, err := strconv.Atoi(strings.TrimSpace(string(body)))
+	data := strings.SplitN(strings.TrimSpace(string(body)), ",", 2)
+	if len(data) != 2 {
+		http.Error(w, "Invalid payload format", http.StatusBadRequest)
+		return
+	}
+
+	addedPort, err := strconv.Atoi(data[0])
 	if err != nil {
 		http.Error(w, "Invalid port format", http.StatusBadRequest)
 		return
 	}
 
-	err = appendPort(addedPort)
+	repo := data[1]
+
+	err = appendPort(addedPort, repo)
 	if err != nil {
-		fmt.Println("Failed to append port", addedPort, ":", err)
+		fmt.Println("Failed to append port", addedPort, "to repo", repo, ":", err)
 		return
 	}
 }

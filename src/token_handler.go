@@ -29,7 +29,7 @@ func postToken(repo string, port int) {
 			return
 		}
 	}
-	nextPort, _ := getNextPort(port)
+	nextPort, _ := getNextPort(port, repo)
 	sendPortRemoval(repo, port)
 	postToken(repo, nextPort)
 }
@@ -71,7 +71,7 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nextPort, err := getNextPort(currentPort)
+	nextPort, err := getNextPort(currentPort, reponame)
 	if err != nil {
 		fmt.Println("Error getting next port:", err)
 		return
