@@ -10,6 +10,7 @@ services:
       - mynetwork
     volumes:
       - ./output:/app/output
+      - ./5000:/app/ring
 
   app-5001:
     build: .
@@ -22,6 +23,7 @@ services:
       - mynetwork
     volumes:
       - ./output:/app/output
+      - ./5001:/app/ring
 
   app-5002:
     build: .
@@ -34,6 +36,7 @@ services:
       - mynetwork
     volumes:
       - ./output:/app/output
+      - ./5002:/app/ring
 
 networks:
   mynetwork:

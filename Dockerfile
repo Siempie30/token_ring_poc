@@ -12,7 +12,6 @@ RUN go mod download
 
 # Copy the source code
 COPY src/ ./src/
-COPY ring_ports.txt /app/ring_ports.txt
 
 # Set the working directory to where main.go is located
 WORKDIR /app/src
@@ -31,7 +30,6 @@ RUN apk --no-cache add ca-certificates
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/myapp .
-COPY --from=builder /app/ring_ports.txt .
 
 # Ensure the binary has execution permissions
 RUN chmod +x /app/myapp

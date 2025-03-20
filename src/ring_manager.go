@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	portFile = "ring_ports.txt"
+	portFile = "ring/ring_ports.txt"
 	port     = -1
 )
 
