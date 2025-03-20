@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-var (
-	commonFile = "output/common.txt"
-)
-
 func writeToFile(filename string) {
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {

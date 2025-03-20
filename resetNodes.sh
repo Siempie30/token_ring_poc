@@ -11,3 +11,6 @@ for i in {5000..5002}; do
 5001
 5002" >> $i/$RING_PORTS_FILE
 done
+
+# Reset the output dir
+sudo rm -rf output

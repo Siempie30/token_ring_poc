@@ -61,7 +61,7 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filename := "../" + reponame + ".txt"
+	filename := "output/" + reponame + "_common.txt"
 
 	writeToFile(filename)
 
