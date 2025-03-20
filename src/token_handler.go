@@ -10,7 +10,7 @@ import (
 )
 
 func postToken(repo string, port int) {
-	url := fmt.Sprintf("http://localhost:%d/token", port)
+	url := fmt.Sprintf("%s%d:%d/token", baseUrl, port, port)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer([]byte(repo)))
 	if err != nil {
 		fmt.Println("Error creating token request:", err)

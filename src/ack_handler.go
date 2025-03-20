@@ -11,7 +11,7 @@ var (
 )
 
 func sendAcknowledgement(port int) {
-	url := fmt.Sprintf("http://localhost:%d/ack", port)
+	url := fmt.Sprintf("%s%d:%d/ack", baseUrl, port, port)
 	_, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte("ack")))
 	if err != nil {
 		fmt.Println("Error sending acknowledgement to", port, ":", err)

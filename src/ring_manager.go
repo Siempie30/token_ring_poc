@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	portFileBase = "ring_ports.txt"
+	portFileBase = "ring/ring_ports.txt"
 	port         = -1
 )
 
@@ -169,7 +169,7 @@ func sendPortRemoval(repo string, port int) error {
 		fmt.Println("Sending port removal request to", line)
 
 		targetPort, _ := strconv.Atoi(line)
-		url := fmt.Sprintf("http://localhost:%d/removal", targetPort)
+		url := fmt.Sprintf("%s%d:%d/removal", baseUrl, targetPort, targetPort)
 		if targetPort == port {
 			continue
 		}
@@ -221,7 +221,7 @@ func sendPortAddition(port int) error {
 		fmt.Println("Sending port addition request to", line)
 
 		targetPort, _ := strconv.Atoi(line)
-		url := fmt.Sprintf("http://localhost:%d/addition", targetPort)
+		url := fmt.Sprintf("%s%d:%d/addition", baseUrl, targetPort, targetPort)
 		_, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte(strconv.Itoa(port))))
 		if err != nil {
 			fmt.Println("Error sending port addition request to", targetPort, ":", err)
