@@ -36,8 +36,5 @@ COPY --from=builder /app/ring_ports.txt .
 # Ensure the binary has execution permissions
 RUN chmod +x /app/myapp
 
-# Expose a port (if your app listens on one)
-#EXPOSE 5000:5000
-
 # Set the entrypoint
 ENTRYPOINT ["/app/myapp"]
