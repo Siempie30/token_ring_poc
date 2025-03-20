@@ -8,6 +8,7 @@ import (
 
 var (
 	baseUrl = "http://app-"
+	repos   = []string{}
 )
 
 func Init() error {

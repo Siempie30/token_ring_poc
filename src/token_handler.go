@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -40,15 +41,21 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Determine the port that sent the token
 	previousPort := r.Header.Get("From-Port")
+	prevPort := -1
 	if previousPort != "" {
 		prevPort, err := strconv.Atoi(previousPort)
-		if err == nil {
-			fmt.Println("Received token from", prevPort)
-			sendAcknowledgement(prevPort)
+		if err != nil {
+			fmt.Println("Invalid port:", err)
+			return
 		}
+		fmt.Println("Received token from", prevPort)
+	} else {
+		fmt.Println("Received token from unknown port")
 	}
 
+	// Read repo name from body
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
@@ -60,9 +67,15 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Received empty token")
 		return
 	}
+	if !slices.Contains(repos, reponame) {
+		fmt.Println("Received token for unknown repository", reponame, "ignorging")
+		return
+	}
+	if prevPort != -1 {
+		sendAcknowledgement(prevPort)
+	}
 
 	filename := "output/" + reponame + "_common.txt"
-
 	writeToFile(filename)
 
 	currentPort, err := strconv.Atoi(os.Getenv("PORT"))

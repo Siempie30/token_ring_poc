@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -37,7 +38,7 @@ func InitRing() error {
 		fmt.Println("REPOS environment variable not set")
 		return fmt.Errorf("REPOS environment variable not set")
 	}
-	repos := strings.Split(repoList, ",")
+	repos = strings.Split(repoList, ",")
 	for _, repo := range repos {
 		fmt.Println("Repo:", repo)
 	}
@@ -227,6 +228,10 @@ func handlePortRemoval(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repo := data[1]
+	if !slices.Contains(repos, repo) {
+		fmt.Println("Received request for removal of port from invalid repo, ignoring")
+		return
+	}
 
 	err = removePort(removedPort, repo)
 	if err != nil {
