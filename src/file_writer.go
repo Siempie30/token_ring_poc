@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 )
@@ -21,5 +22,5 @@ func writeToFile(filename string) {
 	}
 	fmt.Println("Writing to file")
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(time.Duration(500+rand.Intn(2500)) * time.Millisecond)
 }
