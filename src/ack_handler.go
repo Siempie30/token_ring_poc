@@ -55,6 +55,14 @@ func handleAcknowledgement(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Received token in time!")
 		case <-time.After(t_cycle_ms):
 			fmt.Println("Token not received in time! (is token owner dead?)")
+			// Post the token to the next port
+			nextPort, err := getNextPort(nodePort, repo)
+			if err != nil {
+				fmt.Println("Failed to get next port", err)
+				return
+			}
+			fmt.Println("Generating new token and posting to ", nextPort)
+			postToken(repo, nextPort)
 		}
 	}()
 }
