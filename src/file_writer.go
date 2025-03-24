@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+var (
+	maxWriteTimeMs = 3000
+)
+
 func writeToFile(filename string) {
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -22,5 +26,7 @@ func writeToFile(filename string) {
 	}
 	fmt.Println("Writing to file")
 
-	time.Sleep(time.Duration(500+rand.Intn(2500)) * time.Millisecond)
+	minWriteTimeMs := 500
+	// Sleep for a random time between the min and max write times
+	time.Sleep(time.Duration(minWriteTimeMs+rand.Intn(maxWriteTimeMs-minWriteTimeMs)) * time.Millisecond)
 }

@@ -15,7 +15,7 @@ import (
 var (
 	portDir      = "ring"
 	portFileBase = "ring_ports.txt"
-	port         = -1
+	nodePort     = -1
 )
 
 func InitRing() error {
@@ -26,7 +26,7 @@ func InitRing() error {
 		return fmt.Errorf("PORT environment variable not set")
 	}
 	var err error
-	port, err = strconv.Atoi(portString)
+	nodePort, err = strconv.Atoi(portString)
 	if err != nil {
 		fmt.Println("Invalid port:", err)
 		return err
@@ -54,15 +54,15 @@ func InitRing() error {
 
 	for _, repo := range repos {
 		// Check if port is in ring
-		if !isInRing(port, repo) {
+		if !isInRing(nodePort, repo) {
 			// Send message to gateways in ring to append this gateway to the ring
-			err = sendPortAddition(port, repo)
+			err = sendPortAddition(nodePort, repo)
 			if err != nil {
 				fmt.Println("Error sending port addition request:", err)
 				return err
 			}
 			// Append own port to ring
-			appendPort(port, repo)
+			appendPort(nodePort, repo)
 		} else {
 			// This gateway is already part of the ring, so simply start waiting for token
 		}
@@ -73,6 +73,22 @@ func InitRing() error {
 
 func getRingFile(repo string) string {
 	return fmt.Sprintf("%s/%s-%s", portDir, repo, portFileBase)
+}
+
+func getRingSize(repo string) (int, error) {
+	file, err := os.Open(getRingFile(repo))
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	count := 0
+	for scanner.Scan() {
+		count++
+	}
+
+	return count, nil
 }
 
 func isInRing(port int, repo string) bool {

@@ -32,8 +32,8 @@ func main() {
 	http.HandleFunc("/ack", handleAcknowledgement)
 	http.HandleFunc("/addition", handlePortAddition)
 	http.HandleFunc("/removal", handlePortRemoval)
-	fmt.Println("Listening on port", port)
-	if err := http.ListenAndServe(":"+strconv.Itoa(port), nil); err != nil {
+	fmt.Println("Listening on port", nodePort)
+	if err := http.ListenAndServe(":"+strconv.Itoa(nodePort), nil); err != nil {
 		fmt.Println("Server error:", err)
 	}
 }
